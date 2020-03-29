@@ -154,4 +154,4 @@ public class SuppressRestartsException extends RuntimeException {
 
 可以看出这个数据结构不能收尾相撞,相撞时需要扩容,需要保留收尾节点index
 
-![](重启机制和配置.assets/ArrayDeque.png)
+![ArrayDeque](restart.assets/ArrayDeque.png)
