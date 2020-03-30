@@ -1,8 +1,8 @@
 - BigData Component
 
-  - [Flink](Flink/READEME.md)
+  - [Flink](Flink/README.md)
   
 - algorithm & leecode
 
-  - [algorithm](algorithm/READEME.md)
-  - [leecode](algorithm/leecode/READEME.md)
+  - [algorithm](algorithm/README.md)
+  - [leecode](algorithm/leecode/README.md)

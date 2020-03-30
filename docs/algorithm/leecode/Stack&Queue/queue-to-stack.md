@@ -1,6 +1,4 @@
-#### [225. 用队列实现栈](https://leetcode-cn.com/problems/implement-stack-using-queues/)
-
-难度简单152
+## 225. 用队列实现栈
 
 使用队列实现栈的下列操作：
 
