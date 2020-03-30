@@ -16,7 +16,7 @@
 解释：链表中有一个环，其尾部连接到第二个节点。
 ```
 
-![img](https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2018/12/07/circularlinkedlist.png)
+![img](fast-slow-pointer.assets/circularlinkedlist.png)
 
 **示例 2：**
 
@@ -26,7 +26,7 @@
 解释：链表中有一个环，其尾部连接到第一个节点。
 ```
 
-![img](https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2018/12/07/circularlinkedlist_test2.png)
+![img](fast-slow-pointer.assets/circularlinkedlist_test2.png)
 
 **示例 3：**
 
@@ -36,7 +36,7 @@
 解释：链表中没有环。
 ```
 
-![img](https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2018/12/07/circularlinkedlist_test3.png)
+![img](fast-slow-pointer.assets/circularlinkedlist_test3.png)
 
  
 
@@ -108,7 +108,7 @@ public class Solution {
 解释：链表中有一个环，其尾部连接到第二个节点。
 ```
 
-![img](https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2018/12/07/circularlinkedlist.png)
+![img](fast-slow-pointer.assets/circularlinkedlist-1585563820352.png)
 
 **示例 2：**
 
@@ -118,7 +118,7 @@ public class Solution {
 解释：链表中有一个环，其尾部连接到第一个节点。
 ```
 
-![img](https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2018/12/07/circularlinkedlist_test2.png)
+![img](fast-slow-pointer.assets/circularlinkedlist_test2-1585563823185.png)
 
 **示例 3：**
 
@@ -128,7 +128,7 @@ public class Solution {
 解释：链表中没有环。
 ```
 
-![img](https://assets.leetcode-cn.com/aliyun-lc-upload/uploads/2018/12/07/circularlinkedlist_test3.png)
+![img](fast-slow-pointer.assets/circularlinkedlist_test3-1585563826166.png)
 
  
 
