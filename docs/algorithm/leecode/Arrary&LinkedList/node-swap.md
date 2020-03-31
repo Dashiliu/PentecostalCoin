@@ -47,7 +47,17 @@ class Solution {
         //     li = newl;
         // }
         // return newl;
-
+-----------------迭代		
+	    ListNode currentNode = head;
+        ListNode preNode = null;
+        while(currentNode!=null){
+            ListNode temp = currentNode.next;
+            currentNode.next=preNode;
+            preNode = currentNode;
+            currentNode=temp;
+        }
+        return preNode;	
+------------------递归       
         //递归终止条件是当前为空，或者下一个节点为空
 		if(head==null || head.next==null) {
 			return head;
