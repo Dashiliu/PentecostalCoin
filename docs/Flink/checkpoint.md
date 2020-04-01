@@ -1,4 +1,4 @@
-## Checkpoint 与 State 的关系
+##  Checkpoint 与 State 的关系
 
 **Checkpoint** 是从 source 触发到下游所有节点完成的一次全局操作。
 
@@ -126,6 +126,9 @@
 | TOLERABLE_CHECKPOINT_NUMBER(作为替换上一个配置的实现)  | job可容忍的chk失败次数                                       | -1(即为chk失败就job失败)                 |
 | prefer checkpoint for recovery                         | 任务是否从最新的检查点进行回滚                               | false                                    |
 | CHECKPOINTS_DIRECTORY                                  | 保存检查点的位置一般是hdfs,flink-conf.yaml中配置             |                                          |
+| forceCheckpointing                                     | 这是一个有误导性的名称，实际上是指在协调器正在处理checkpoint时是否必须触发快照 |                                          |
+
+
 
 ### 下面是设置 Flink Checkpoint 参数配置的建议及注意点：
 
@@ -163,3 +166,31 @@ env.getCheckpointConfig().enableExternalizedCheckpoints(ExternalizedCheckpointCl
 env.getCheckpointConfig().setPreferCheckpointForRecovery(true);
 ```
 
+# 源码分析
+
+### checkpoint 保存的原则3个
+
+```
+org.apache.flink.runtime.checkpoint.CheckpointRetentionPolicy
+RETAIN_ON_CANCELLATION 取消/失败的时候保存
+RETAIN_ON_FAILURE 仅失败时候保存
+NEVER_RETAIN_AFTER_TERMINATION 绝不保存
+```
+
+### 据此3原则推出5种默认的CheckpointProperties
+
+```
+org.apache.flink.runtime.checkpoint.CheckpointProperties
+SYNC_SAVEPOINT 同步savepoint (submit时也保存,force=true)
+SAVEPOINT 异步savepoint (submit时也保存,force=true)
+CHECKPOINT_NEVER_RETAINED 不保存的checkpoint (force=false)
+CHECKPOINT_RETAINED_ON_FAILURE 失败保存的checkpoint (force=false)
+CHECKPOINT_RETAINED_ON_CANCELLATION 取消时/失败时保存的checkpoint (force=false)
+```
+
+### 2种CheckpointStorage
+
+```
+FsCheckpointStorage 文件系统保存介质(hdfs)
+MemoryBackendCheckpointStorage 内存保存介质
+```
