@@ -155,3 +155,15 @@ public class SuppressRestartsException extends RuntimeException {
 可以看出这个数据结构不能收尾相撞,相撞时需要扩容,需要保留收尾节点index
 
 ![ArrayDeque](restart.assets/ArrayDeque.png)
+
+# 故障转移策略（Failover Strategies）
+
+Flink支持不同的故障转移策略，可以通过Flink的配置文件flink-conf.yaml中的配置参数jobmanager.execution.failover-strategy对其进行配置。
+
+#### 重新启动所有故障转移策略（Restart All Failover Strategy）
+
+此策略重新启动作业中的所有任务以从任务失败中恢复。
+
+#### 重新启动流水线区域故障转移策略（Restart Pipelined Region Failover Strategy）
+
+此策略将任务分为不相交的区域。 当检测到任务故障时，此策略将计算必须重新启动以从故障中恢复的最小区域集。 与“重新启动所有故障转移策略”相比，对于某些作业，这可能导致要重新启动的任务更少。
