@@ -28,17 +28,17 @@ Hive/Impala也可以作为HBase之上的SQL工具。包括Phoenix这3个工具�
 - Phoenix非常轻量级，因为它不需要额外的服务。
 - Phoenix还支持一些高级功能，比如多个二级索引，flashback查询等。无论是Impala还是Hive都无法提供二级索引支持。
 
-以下是比较：
+以下是比较：(个人理解比较片面)
 
-|                 | Apache Phoenix                           | Impala                       | Hive          | 第三方                         | Region内方案(如Pharos)                        |
-| --------------- | ---------------------------------------- | ---------------------------- | ------------- | ------------------------------ | --------------------------------------------- |
-| 语法            | SQL                                      | SQL                          | HiveQL        | 基于slor/ES可实现标签化查询    | 索引是自己需要提前订好的,所以语法可以自己实现 |
-| 定位            | 为低延时应用在HBase之上提供高效的SQL查询 | 大数据集之上的交互式探索分析 | 批处理比如ETL | 基于HBase的查询服务,云厂商方案 | 可插拔查询方案                                |
-| 优点            | 简单方便                                 | -                            | 集成HIve      | 标签化,更快,可使用ES的优势     | 索引利用HBase rowkey机制                      |
-| 缺点            | 安装需要重启,历史表需要映射              | -                            | -             | 架构复杂,成本高                | 对原表有很大影响                              |
-| 二级索引        | Yes(无法保证ACID)                        | No                           | No            | Yes                            | Yes(ACID实现不完善,只是思路)                  |
-| 额外的服务      | No                                       | Yes                          | Yes           | Yes                            | NO                                            |
-| HBase的高级特性 | Yes                                      | No                           | No            | Yes                            | Yes                                           |
+|                 | Apache Phoenix                                      | Kylin                               | Impala                       | Hive          | 第三方                                | Region内方案(如Pharos)                             |
+| --------------- | --------------------------------------------------- | ----------------------------------- | ---------------------------- | ------------- | ------------------------------------- | -------------------------------------------------- |
+| 语法            | SQL                                                 | 只读SQL                             | SQL                          | HiveQL        | 基于slor/ES可实现标签化查询           | 索引是自己需要提前订好的,所以语法可以自己实现      |
+| 定位            | 为低延时应用在HBase之上提供高效的SQL查询            | 分布式的大数据分析引擎              | 大数据集之上的交互式探索分析 | 批处理比如ETL | 基于HBase的查询服务,云厂商方案(阿里)  | 可插拔查询方案(个人觉得和Phoenix 本地索引有些类似) |
+| 优点            | 支持映射,侵入性更小                                 | 多维分析能力（OLAP）,易用的管理页面 | -                            | 集成HIve      | 标签化,更快,可使用ES的优势,云厂商维护 | 索引利用HBase rowkey机制                           |
+| 缺点            | 索引覆盖限制,一些sql优化不好,因为底层也是调HBaseAPI | 只读,先计算Cube                     | -                            | -             | 架构复杂,成本高                       | 对原表有很大影响                                   |
+| 二级索引        | Yes                                                 |                                     | No                           | No            | Yes                                   | Yes(ACID实现不完善,只是思路)                       |
+| 额外的服务      | No                                                  |                                     | Yes                          | Yes           | Yes                                   | NO                                                 |
+| HBase的高级特性 | Yes                                                 |                                     | No                           | No            | Yes                                   | Yes                                                |
 
 ## phoenix 安装
 
@@ -147,6 +147,8 @@ select * from user;
 
 ### 添加二级索引
 
+***索引不指定预分区数时，其默认分区数与表保持一致***
+
 ```rust
 测试用例 先建表:
 create table hbase_test
@@ -178,20 +180,81 @@ hbase_data.csv
 420205198201217829,陶秀,0,泸州,商业工作人员,13904973527,15602017043,广州银行1,城武支大厦126号-18-2,1,0
 hadoop fs -put hbase_data.csv /tmp/jinzl
 执行bulkload
-HADOOP_CLASSPATH=/opt/cloudera/parcels/CDH/lib/hbase/hbase-protocol-1.2.0-cdh5.13.0.jar:/opt/cloudera/parcels/CDH/lib/hbase/conf hadoop jar /opt/cloudera/parcels/CDH/lib/hbase/lib/phoenix-4.14.1-HBase-1.1-client.jar org.apache.phoenix.mapreduce.CsvBulkLoadTool -t hbase_test -i /tmp/jinzl/hbase_data.csv
+hadoop jar /opt/cloudera/parcels/CDH/lib/hbase/lib/phoenix-4.14.1-HBase-1.1-client.jar org.apache.phoenix.mapreduce.CsvBulkLoadTool -t hbase_test -i /tmp/jinzl/hbase_data.csv
+```
 
+#### 1.Global Indexes(全局索引)
 
-1） 不加排序：Create INDEX 索引名 ON 表名（列名A，列表B***） 
-2） 加排序：Create INDEX 索引名 ON 表名（列名A DESC，列表B***）
-举例如下：
-create INDEX id_idx on tower_info("tower_id" ASC ,"create_time"  DESC ,"system","sub_system"）
-    
-create INDEX id_idx on test(id ASC ,name  DESC ,age);
+全局索引适合那些读多写少的场景。如果使用全局索引，读数据基本不损耗性能，所有的性能损耗都来源于写数据。数据表的添加、删除和修改都会更新相关的索引表（数据删除了，索引表中的数据也会删除；数据增加了，索引表的数据也会增加）。而查询数据的时候，Phoenix会通过索引表来快速低损耗的获取数据。默认情况下，如果你的查询语句中没有索引相关的列的时候，Phoenix不会使用索引。
+
+```
+CREATE INDEX index1_hbase_test ON hbase_test(s6);
+
 # 常用删除
 drop TABLE if EXISTS TOWER_INFO（表名）
 drop index  TOWER_IDX（索引名） ON TOWER_INFO（表名）；
 DROP SEQUENCE IF EXISTS test_sequence
 ```
+
+#### 2.Local Indexes(本地索引)
+
+本地索引适合那些写多读少，或者存储空间有限的场景。和全局索引一样，Phoenix也会在查询的时候自动选择是否使用本地索引。本地索引之所以是本地，只要是因为索引数据和真实数据存储在***同一台机器上******同一张表上***，这样做主要是为了避免网络数据传输的开销。如果你的查询条件没有完全覆盖索引列，本地索引还是可以生效。因为无法提前确定数据在哪个Region上，所以在读数据的时候，还需要检查每个Region上的数据而带来一些性能损耗。
+
+***从这可以看到同一台机器是怎么同一台的,这完全整到一起了,在你自己的表上加了索引L#0字段,修改表原始文件了***
+
+```
+新建索引之前效果:
+HBASE =>  'HBASE_TEST', {TABLE_ATTRIBUTES => {coprocessor$1 => '|org.apache.phoenix.coprocessor.ScanRegionObserver|805306366|', coprocessor$2 => '|org.apache.phoenix.coprocessor.UngroupedAggregateRegionObserver|805306366|', coprocessor$3 => '|org.apache.phoenix.coprocessor.GroupedAggregateRegionObserver|805306366|', coprocessor$4 => '|org.apache.phoenix.coprocessor.ServerCachingEndpointImpl|805306366|', coprocessor$5 => '|org.apache.phoenix.hbase.index.Indexer|805306366|org.apache.hadoop.hbase.index.codec.class=org.apache.phoenix.index.PhoenixIndexCodec,index.builder=org.apache.phoenix.index.PhoenixIndexBuilder'}, {NAME => '0', BLOOMFILTER => 'NONE', DATA_BLOCK_ENCODING => 'FAST_DIFF'}
+
+create local index index2_hbase_test on hbase_test (s7);
+
+新建本地索引之后效果:
+HBASE => 'HBASE_TEST', {TABLE_ATTRIBUTES => {coprocessor$1 => '|org.apache.phoenix.coprocessor.ScanRegionObserver|805306366|', coprocessor$2 => '|org.apache.phoenix.coprocessor.UngroupedAggregateRegionObserver|805306366|', coprocessor$3 => '|org.apache.phoenix.coprocessor.GroupedAggregateRegionObserver|805306366|', coprocessor$4 => '|org.apache.phoenix.coprocessor.ServerCachingEndpointImpl|805306366|', coprocessor$5 => '|org.apache.phoenix.hbase.index.Indexer|805306366|org.apache.hadoop.hbase.index.codec.class=org.apache.phoenix.index.PhoenixIndexCodec,index.builder=org.apache.phoenix.index.PhoenixIndexBuilder', coprocessor$6 => '|org.apache.hadoop.hbase.regionserver.IndexHalfStoreFileReaderGenerator|805306366|', METADATA => {'DATA_TABLE_NAME' => 'HBASE_TEST', 'SPLIT_POLICY' => 'org.apache.phoenix.hbase.index.IndexRegionSplitPolicy'}}, {NAME => '0', BLOOMFILTER => 'NONE', DATA_BLOCK_ENCODING => 'FAST_DIFF'}, {NAME => 'L#0', BLOOMFILTER => 'NONE', DATA_BLOCK_ENCODING => 'FAST_DIFF'}
+
+在查询项中不包含索引字段的条件下，一样查询比较快速
+select s2 from hbase_test where s7='13500591348';
+select * from hbase_test where s7='13500591348';
+```
+
+#### 3.索引覆盖
+
+使用覆盖索引获取数据的过程中，内部不需要再去HBase的原表获取数据，查询需要返回的列都会被存储在索引中。要想达到这种效果，你的select的列，where的列都需要在索引中出现。举个例子，如果你的SQL语句是select s2 from hbase_test where s6='13505503576'，要最大化查询效率和速度最快，可以建立覆盖索引。
+
+如果查询项中不包含除s2和s6之外的列，而且查询条件不包含除s2之外的列，则可以确保该查询使用Index，关键字INCLUDE包含需要返回数据结果的列。这种索引方式的最大好处就是速度快，而我们也知道，索引就是空间换时间，所以缺点也很明显，存储空间耗费较多。
+
+```
+CREATE INDEX index1_hbase_test ON hbase_test(s6) INCLUDE(s2);
+
+select s6 from hbase_test where s6='13707243562';
+select s2 from hbase_test where s6='13707243562';
+
+效果:
+HBase => 'INDEX1_HBASE_TEST', {TABLE_ATTRIBUTES => {coprocessor$1 => '|org.apache.phoenix.coprocessor.ScanRegionObserver|805306366|', coprocessor$2 => '|org.apache.phoenix.coprocessor.UngroupedAggregateRegionObserver|805306366|', coprocessor$3 => '|org.apache.phoenix.coprocessor.GroupedAggregateRegionObserver|805306366|', coprocessor$4 => '|org.apache.phoenix.coprocessor.ServerCachingEndpointImpl|805306366|', METADATA => {'DATA_TABLE_NAME' => 'HBASE_TEST', 'PRIORITY' => '1000'}}, {NAME => '0', BLOOMFILTER => 'NONE', DATA_BLOCK_ENCODING => 'FAST_DIFF'}
+```
+
+#### 4.索引函数
+
+函数索引从从Phoenix4.3版本就有，这种索引的内容不局限于列，还能在表达式上建立索引。如果你使用的表达式正好就是索引的话，数据也可以直接从这个索引获取，而不需要从数据库获取。
+
+如果查询项不包含substr(s7,1,10)，则跟不建索引时是一样的。如果想让第一个查询语句走索引，我们可以在建立索引时采用INCLUDE(S7)来实现。
+
+```
+create index index2_hbase_test on hbase_test (substr(s7,1,10));
+
+select s1,s7 from hbase_test where substr(s7,1,10)='1550864580';
+select s1,substr(s7,1,10) from hbase_test where substr(s7,1,10)='1550864580';
+```
+
+#### 5.索引排序
+
+1）不加排序：Create INDEX 索引名 ON 表名（列名A，列表B） 
+2）加排序：Create INDEX 索引名 ON 表名（列名A DESC，列表B)
+
+```
+create INDEX id_idx on tower_info("tower_id" ASC ,"create_time"  DESC ,"system","sub_system"）
+```
+
+
 
 ###  自增主键
 
@@ -231,22 +294,8 @@ Phoenix提供了批量导入/导出数据的方式。批量导入只支持csv格
 
 > ```
 > 示例: 
-> [ec2-user@ip-172-31-22-86 ~]$ HADOOP_CLASSPATH=/opt/cloudera/parcels/CDH/lib/hbase/hbase-protocol-1.2.0-cdh5.12.1.jar:/opt/cloudera/parcels/CDH/lib/hbase/conf hadoop jar /opt/cloudera/parcels/CLABS_PHOENIX/lib/phoenix/phoenix-4.7.0-clabs-phoenix1.3.0-client.jar org.apache.phoenix.mapreduce.CsvBulkLoadTool -t item -i /fayson/item.csv
-> 
-> 17/10/03 10:32:24 INFO util.QueryUtil: Creating connection with the jdbc url: jdbc:phoenix:ip-172-31-21-45.ap-southeast-1.compute.internal,ip-172-31-22-86.ap-southeast-1.compute.internal,ip-172-31-26-102.ap-southeast-1.compute.internal:2181:/hbase;
-> ...
-> 17/10/03 10:32:24 INFO zookeeper.ZooKeeper: Initiating client connection, connectString=ip-172-31-21-45.ap-southeast-1.compute.internal:2181,ip-172-31-22-86.ap-southeast-1.compute.internal:2181,ip-172-31-26-102.ap-southeast-1.compute.internal:2181 sessionTimeout=60000 watcher=hconnection-0x7a9c0c6b0x0, quorum=ip-172-31-21-45.ap-southeast-1.compute.internal:2181,ip-172-31-22-86.ap-southeast-1.compute.internal:2181,ip-172-31-26-102.ap-southeast-1.compute.internal:2181, baseZNode=/hbase
-> 17/10/03 10:32:24 INFO zookeeper.ClientCnxn: Opening socket connection to server ip-172-31-21-45.ap-southeast-1.compute.internal/172.31.21.45:2181. Will not attempt to authenticate using SASL (unknown error)
-> ...
-> 17/10/03 10:32:30 INFO mapreduce.Job: Running job: job_1507035313248_0001
-> 17/10/03 10:32:38 INFO mapreduce.Job: Job job_1507035313248_0001 running in uber mode : false
-> 17/10/03 10:32:38 INFO mapreduce.Job:  map 0% reduce 0%
-> 17/10/03 10:32:52 INFO mapreduce.Job:  map 100% reduce 0%
-> 17/10/03 10:33:01 INFO mapreduce.Job:  map 100% reduce 100%
-> 17/10/03 10:33:01 INFO mapreduce.Job: Job job_1507035313248_0001 completed successfully
-> 17/10/03 10:33:01 INFO mapreduce.Job: Counters: 50
-> ...
-> 17/10/03 10:33:01 INFO mapreduce.AbstractBulkLoadTool: Loading HFiles from /tmp/fef0045b-8a31-4d95-985a-bee08edf2cf9
+> /tmp/jinzl/hbase_data.csv是hdfs路径
+> hadoop jar /opt/cloudera/parcels/CDH/lib/hbase/lib/phoenix-4.14.1-HBase-1.1-client.jar org.apache.phoenix.mapreduce.CsvBulkLoadTool -t hbase_test -i /tmp/jinzl/hbase_data.csv
 > ```
 
 ### 使用Phoenix从HBase中导出数据到HDFS
@@ -277,6 +326,107 @@ Phoenix提供了批量导入/导出数据的方式。批量导入只支持csv格
 > 2017-10-03 10:45:38,905 [main] INFO  org.apache.pig.backend.hadoop.executionengine.mapReduceLayer.MapReduceLauncher - Success!
 > 
 > ```
+
+## Phoenix基本优化方法
+
+### 1. ***SALT_BUCKETS***
+
+  HBASE建表之初默认一个region，当写入数据超过region分裂阈值时才会触发region分裂。我们可以通过SALT_BUCKETS方法加盐，在表构建之初就对表进行预分区。SALT_BUCKETS值的范围是1~256（2的8次方），一般将预分区的数量设置为0.5～1 倍核心数。
+  加盐的原理是在原始的rowkey前加上一个byte，并填充由rowkey计算得出的hash值，使得原本连续的rowkeys被均匀打散到多个region中，有效地解决了读写热点问题。较多的region同时也增加了表读写并行度，从而提升了HBase表的读写效率。
+
+```
+#表指定分区数
+CREATE TABLE test_salt
+ (
+  hrid         varchar not null primary key,
+  parentid     bigint,
+  departmentid varchar
+ )SALT_BUCKETS=40;
+
+#索引指定分区数
+(索引不指定预分区数时，其默认分区数与表保持一致)
+CREATE INDEX idx_test_salt_departmentid ON TESTN(departmentid) SALT_BUCKETS=20;
+```
+
+  加盐原理图解
+
+![img](Untitled.assets/61a956c0470a1ec720736515aec5df50643.jpg)
+
+
+
+### 2. Pre-split
+
+  除了使用加盐直接指定分区数外，我们也可以使用split on手动设置分区。这种方法同样是在构建之初就对表进行预分区，较多的region能够增加hbase的并行度，从而提升读取、写入效率。由于对rowkey不引入额外的byte，因此不会改变rowkey的原始顺序。
+
+```
+#对表指定五个分区
+CREATE TABLE test_split
+ (
+  hrid         varchar,
+  parentid     bigint,
+  departmentid varchar
+CONSTRAINT my_pk PRIMARY KEY (departmentid, hrid))
+SPLIT ON ('market','device','develop','sale');
+```
+
+
+
+### 3. 分列族
+
+  由于HBase表的不同列族是分开存储，因此把相关性大的列放在同一个列族，能够减少数据检索时扫描的数据量，从而提升读的效率。
+
+```
+#对列指定a、b两个列族
+CREATE TABLE test_cf
+ (
+  a.hrid         varchar not null primary key,
+  a.parentid     bigint,
+  b.departmentid varchar
+ );
+```
+
+
+
+### 4. 使用压缩
+
+  在数据量大的表上可以使用压缩算法来减少存储占用空间，从而提高性能 。常用的压缩方法有GZ，lzo等。
+
+```
+#对表实施GZ压缩
+CREATE TABLE test_compress
+ (
+  hrid         varchar not null primary key,
+  parentid     bigint,
+  departmentid varchar
+ )COMPRESSION='GZ'
+```
+
+### 5.参数优化
+
+  根据集群配置情况设置合理参数有助于优化HBase性能，可以在hbase-site.xml里配置以下参数
+
+```
+1. index.builder.threads.max （Default: 10）
+   为主表更新操作建立索引的最大线程数
+
+2. index.writer.threads.max（Default: 10）
+   将索引写入索引表的最大线程数
+
+3. hbase.htable.threads.max（Default: 2,147,483,647）
+   索引表写入数据的最大线程数
+
+4. index.tablefactory.cache.size（Default: 10）
+   缓存10个往索引表写数据的线程
+
+5. index.builder.threads.keepalivetime（Default: 60）
+   为主表更新操作建立索引的线程的超时时间
+
+6. index.writer.threads.keepalivetime（Default: 60）
+   将索引写入索引表的线程的超时时间
+
+7. hbase.htable.threads.keepalivetime（Default: 60）
+   索引表写入数据的线程的超时时间
+```
 
 ## 其他问题汇总
 

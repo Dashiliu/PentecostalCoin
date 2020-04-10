@@ -1,6 +1,7 @@
 - BigData Component
 
   - [Flink](Flink/README.md)
+  - [HBase](HBase/README.md)
   
 - algorithm & leecode
 
