@@ -42,7 +42,45 @@ Hive/Impala也可以作为HBase之上的SQL工具。包括Phoenix这3个工具�
 
 ## phoenix 安装
 
-安装(jar包放到每个HBase RS lib下) -> 配置(修改HBase 配置启用2级索引) -> 重启HBase RS
+1.利用CDH批量下载依赖并修改配置后重启
+
+2.手动加依赖安装(基于 HBase1.2.0-CDH5.11)
+
+a.从官网下载适合的包,解压缩后按下面步骤添加依赖到hbase lib目录下
+
+```
+如果添加了这些依赖会导致hbase没有可以重启但是没有日志
+rm -rf phoenix-core-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-flume-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-hive-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-kafka-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-load-balancer-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-pherf-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-pig-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-queryserver-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-queryserver-client-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-spark-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-tracing-webapp-4.14.0-cdh5.11.2-tests.jar
+rm -rf phoenix-core-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-flume-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-hive-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-kafka-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-pherf-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-pig-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-queryserver-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-queryserver-client-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-spark-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-tracing-webapp-4.14.0-cdh5.11.2-sources.jar
+rm -rf phoenix-kafka-4.14.0-cdh5.11.2-minimal.jar
+rm -rf phoenix-pherf-4.14.0-cdh5.11.2-minimal.jar
+ 
+ cd /opt/cloudera/parcels/CDH/lib/hbase/lib
+ 直接拷贝这些依赖到上面的目录
+ hadoop dfs -get /tmp/jinzl/phoenix/*
+或 export JAVA_HOME=/data/server/jdk  && hadoop dfs -get /tmp/jinzl/phoenix/phoenix*
+```
+
+b.配置(修改HBase 配置启用2级索引) -> 重启HBase RS
 
 ```
 <property>
