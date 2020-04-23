@@ -80,7 +80,7 @@ rm -rf phoenix-pherf-4.14.0-cdh5.11.2-minimal.jar
 或 export JAVA_HOME=/data/server/jdk  && hadoop dfs -get /tmp/jinzl/phoenix/phoenix*
 ```
 
-b.配置(修改HBase 配置启用2级索引) -> 重启HBase RS
+b.配置(修改HBase 配置启用2级索引) -> 重启HBase 所有节点
 
 ```
 <property>
