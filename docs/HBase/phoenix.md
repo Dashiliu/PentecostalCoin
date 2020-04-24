@@ -292,6 +292,48 @@ select s1,substr(s7,1,10) from hbase_test where substr(s7,1,10)='1550864580';
 create INDEX id_idx on tower_info("tower_id" ASC ,"create_time"  DESC ,"system","sub_system"）
 ```
 
+#### 6.异步索引(4.5以上)
+
+```
+创建表
+create view Repair_20200327 (
+    pk varchar primary key,
+    "cf1"."userId" varchar,
+    "cf1"."actionType" varchar,
+    "cf1"."channelId" varchar,
+    "cf1"."innerVersion" varchar,
+    "cf1"."model" varchar,
+    "cf1"."runId" varchar,
+    "cf1"."time" varchar,
+    "cf1"."bizJson" varchar
+) as select * from "Repair_20200327";
+
+创建全局索引
+CREATE INDEX "INDEX1_Repair_20200327" ON "Repair_20200327"("cf1"."userId","cf1"."actionType","cf1"."time") SALT_BUCKETS=32;
+会超时失败,只能创建2亿左右不包含大字段bizjson情况
+
+创建异步索引
+ drop index INDEX1_REPAIR_20200327 on "Repair_20200327";
+ CREATE INDEX INDEX1_REPAIR_20200327 ON Repair_20200327("cf1"."userId","cf1"."actionType","cf1"."time") async SALT_BUCKETS=32 ;
+
+ hbase org.apache.phoenix.mapreduce.index.IndexTool \
+    --data-table=REPAIR_20200327 \
+    --index-table=INDEX1_REPAIR_20200327 \
+    --output-path=/tmp/jinzl/phoenix-index
+	
+ hbase org.apache.phoenix.mapreduce.index.IndexTool \
+    --schema=WEBLOGGER \
+    --data-table=Repair_20200327 \
+    --index-table=INDEX1_Repair_20200327 \
+    --output-path=/tmp/jinzl/phoenix-index
+```
+
+#### 7.强制索引
+
+```
+select  /*+ INDEX(REPAIR_20200327  index1_REPAIR_20200327 )*/ * from REPAIR_20200327  where "userId"='i1531506675';
+```
+
 
 
 ###  自增主键
