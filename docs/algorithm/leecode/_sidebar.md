@@ -11,3 +11,8 @@
 - 优先队列
 
   - [最小堆应用:流的第K大元素](algorithm/leecode/PriorityQueue/kth-largest-element-in-a-stream.md)
+  
+- HashTable
+
+  - [HashTable:hashcount](algorithm/leecode/HashTable/hashcount.md)
+  
