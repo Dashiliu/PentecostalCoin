@@ -521,7 +521,9 @@ CREATE TABLE test_compress
 
 3. 异步方式构建索引过程中，出现问题：不识别Phoenix中小写字母表，不知是不是版本低的问题。
 
-4.  创建Phoenix二级索引后，只能通过Phoenix接口加载数据，直接操作hbase无效的，也就是说只能通过jdbc和加载CSV文件方式加载数据。
+4. 创建Phoenix二级索引后，只能通过Phoenix接口加载数据，直接操作hbase无效的，也就是说只能通过jdbc和加载CSV文件方式加载数据。
+
+   ![image-20200923201943838](phoenix.assets/image-20200923201943838.png)
 
 5. 为已有数据phoenix表补建索引，亦可能导致超时中断。建议建立phoenix-HBase表时即建好索引，再接数据。
 
