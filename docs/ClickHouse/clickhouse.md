@@ -75,9 +75,16 @@ ClickHouse 是由号称“俄罗斯 Google ”的 Yandex开源的一个列式的
 索引粒度由  index_granularity * granularity(声明二级索引时设定)
 
 1. minmax : 记录了一小段数内的最小和最大值,类似分区索引不过粒度更细
+
 2. set(maxrows) : 记录了声明字段或表达式的取值(唯一值)
+
 3. ngrambf_v1(n,size_of_bloom_filter_in_bytes,number_of_hash_functions,random_seed) : 数据短语的布隆过滤器,只支持String和FixedString. n 切割出token的单位长度
+
 4. tokenbf_v1(size_of_bloom_filter_in_bytes,number_of_hash_functions,random_seed) : 会自动按照非字符的,数字的字符串分隔token 
+
+5. bloom_filter([false_positive]) : 指定字段的布隆过滤器,支持 `Int*`, `UInt*`, `Float*`, `Enum`, `Date`, `DateTime`, `String`, `FixedString`, `Array`, `LowCardinality`, `Nullable`. false_positive 是容错率默认0.025
+
+   ![image-20201026125742590](clickhouse.assets/image-20201026125742590.png)
 
 ### 剪枝过程
 
@@ -148,14 +155,42 @@ ClickHouse 是由号称“俄罗斯 Google ”的 Yandex开源的一个列式的
 
   举例来说，你有一个主键是(a, b)，增加一个列c，主键变成(a, b, c)，这种变动，只在下列情况有作用：
 
-  你的查询使用到了c列
-  以(a, b)组合，去重后的值，要远大于index_granularity的值。
+  - 你的查询使用到了c列
+  - 以(a, b)组合，去重后的值，要远大于index_granularity的值。
 
 ### mergeTree引擎家族
 
 ![](clickhouse.assets/合并树家族.jpg)
 
+StorageMergeTree::merge函数是MergeTree异步Merge的核心逻辑，不同引擎是在此基础上有各自的实现逻辑.Data Part Merge的工作除了通过后台工作线程自动完成，用户还可以通过Optimize命令来手动触发。
+
+- 自动触发的场景中，系统会根据后台空闲线程的数据来启发式地决定本次Merge最大可以处理的数据量大小，max_bytes_to_merge_at_min_space_in_pool和max_bytes_to_merge_at_max_space_in_pool参数分别决定当空闲线程数最大时可处理的数据量上限以及只剩下一个空闲线程时可处理的数据量上限。当用户的写入量非常大的时候，应该适当调整工作线程池的大小和这两个参数。
+
+- 当用户手动触发merge时，系统则是根据disk剩余容量来决定可处理的最大数据量。
+
+ClickHouse抽象出了IMergeSelector类来实现不同的逻辑。当前主要有两种不同的merge策略：TTL数据淘汰策略和常规策略。
+
+- TTL数据淘汰策略：默认表的设置是1天才会进行TTL merge.TTL数据淘汰策略启用的条件比较苛刻，只有当某个Data Part中存在数据生命周期超时需要淘汰，并且距离上次使用TTL策略达到一定时间间隔（默认1小时）。TTL策略也非常简单，首先挑选出TTL超时最严重Data Part，把这个Data Part所在的数据分区作为要进行数据合并的分区，最后会把这个TTL超时最严重的Data Part前后连续的所有存在TTL过期的Data Part都纳入到merge的范围中。这个策略简单直接，每次保证优先合并掉最老的存在过期数据的Data Part。
+
+- 常规策略：这里的选举策略就比较复杂，基本逻辑是枚举每个可能合并的Data Parts区间，通过启发式规则判断是否满足合并条件，再有启发式规则进行算分，选取分数最好的区间。启发式判断是否满足合并条件的算法在SimpleMergeSelector.cpp::allow函数中，其中的主要思想分为以下几点：
+
+  - 系统默认对合并的区间有一个Data Parts数量的限制要求（每5个Data Parts才能合并）；
+  - 如果当前数据分区中的Data Parts出现了膨胀，则适量放宽合并数量限制要求（最低可以两两merge）；
+  - 如果参与合并的Data Parts中有很久之前写入的Data Part，也适量放宽合并数量限制要求，放宽的程度还取决于要合并的数据量。
+
+  第一条规则是为了提升写入性能，避免在高速写入时两两merge这种低效的合并方式。
+
+  最后一条规则则是为了保证随着数据分区中的Data Part老化，老龄化的数据分区内数据全部合并到一个Data Part。
+
+  中间的规则更多是一种保护手段，防止因为写入和频繁mutation的极端情况下，Data Parts出现膨胀。
+
+  启发式算法的策略则是优先选择IO开销最小的Data Parts区间完成合并，尽快合并掉小数据量的Data Parts是对在线查询最有利的方式，数据量很大的Data Parts已经有了很较好的数据压缩和索引效率，合并操作对查询带来的性价比较低。
+
+
+
 ## 四 常用引擎试水
+
+CH有多种引擎,按类分为数据库引擎和表引擎,具体可参考文档 https://clickhouse.tech/docs/en/engines/
 
 ### kafka 引擎 : 基本满足当前格式的实时ETL需求,非四字段添加字段就需要改动建表语句
 
@@ -190,7 +225,7 @@ ClickHouse 是由号称“俄罗斯 Google ”的 Yandex开源的一个列式的
 ### jdbc 引擎  :  除了mysql的,其他的并不能开箱即用,但是以连通为目的的优化成本低,是 java的
 
 - 通过java开发的jdbc-bridge来跟所有能支持jdbc的存储进行通信,对此抱有很大希望,如果很好用能解决维度表问题,也能解决统一查询接口的问题
-- 看源码发现jdbc-bridge是通过SPI机制加载指定目录下的驱动器jar包的,测试了需要肯定需要通过jdbc连接的几个存储:
+- 看源码发现jdbc-bridge是通过SPI机制加载指定目录下的驱动器jar包的,测试了目前我需要通过jdbc连接的几个存储:
   - mysql : 能通,但是存在decimal类型的坑,CH没有这个类型,如果是mysql引擎的话是直接转为String,如果通过jdbc则无法建表.<-换句话说如果表里没有decimal类型的字段是可以通过此方案查询mysql的
   - hive2 : SPI加载找不到 META-INF/services/java.sql.Driver 文件
     hive-jdbc-0.11.0.jar
@@ -206,6 +241,25 @@ ClickHouse 是由号称“俄罗斯 Google ”的 Yandex开源的一个列式的
 ### ha 部署方案
 
 ![image-20201026105147322](clickhouse.assets/image-20201026105147322.png)
+
+- 本地表创建语句
+  CREATE TABLE default.test_01_local on CLUSTER cluster_2s
+  (
+  EventDate DateTime,
+  CounterID UInt32,
+  UserID UInt32
+  ) ENGINE = ReplicatedMergeTree('/clickhouse/tables/{shard}/test_01_local','{replica}')
+  PARTITION BY toYYYYMM(EventDate)
+  ORDER BY (CounterID, EventDate, intHash32(UserID))
+  SETTINGS index_granularity = 8192;
+
+- 写入本地表
+     客户端中  :  insert into default.test_01_local VALUES (now(), 1, 1);
+
+     异步调用  :  clickhouse-client -u default --password xxxxxx --port 9000 -hcentos-1 --query="insert into default.test_01_local VALUES (now(), 10000, 10000)"
+
+- 分布式表创建语句
+  CREATE TABLE default.test_01 ON CLUSTER cluster_2s AS default.test_1_local engine = Distributed(cluster_2s, default, test_01_local, rand());
 
 1. 同一物理集群可以配置多套逻辑集群
 2. 经过测试,单个物理机器上布2个节点,数据查询有问题(原因仍未定位,docker/物理机部署问题相同),换为单物理机单节点问题解决,且根据CH原理,安装CH集群时会扫描核数,之后每个查询会使用总量1/2的核进行查询加速,且还有异步的merge线程池,所以单节点部署没毛病
@@ -275,6 +329,8 @@ ClickHouse 是由号称“俄罗斯 Google ”的 Yandex开源的一个列式的
 4. 尽量做1000条以上批量的写入，避免逐行insert或小批量的insert，update，delete操作，因为ClickHouse底层会不断的做异步的数据合并，会影响查询性能，这个在做实时数据写入的时候要尽量避开；
 5. Clickhouse快是因为采用了并行处理机制，即使一个查询，也会用服务器一半的CPU去执行，所以ClickHouse不能支持高并发的使用场景，默认单查询使用CPU核数为服务器核数的一半，安装时会自动识别服务器核数，可以通过配置文件修改该参数。
 6. 主键并不是唯一建,与HBase相比,去重成本高
+7. Cpp源码学习成本高
+8. 没用hdfs+CPU密集型导致的运维,调优要求较高
 
 
 
