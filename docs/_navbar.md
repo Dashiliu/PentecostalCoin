@@ -2,7 +2,7 @@
 
   - [Flink](Flink/README.md)
   - [HBase](HBase/README.md)
-  - [ClickHouse](ClickHouse/clickhouse.md)
+  - [ClickHouse](ClickHouse/README.md)
   
 - algorithm & leecode
 
