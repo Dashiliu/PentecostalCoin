@@ -30,7 +30,7 @@ ClickHouse 是由号称“俄罗斯 Google ”的 Yandex开源的一个列式的
 
 ### 如何能查询快
 
-![](clickhouse.assets/ch fa.png)
+![](clickhouse.assets/chfa.png)
 
 ### 由果推因,自己实现CH数据存储和查询
 
@@ -68,7 +68,7 @@ ClickHouse 是由号称“俄罗斯 Google ”的 Yandex开源的一个列式的
 
    最终结构
 
-   <img src="clickhouse.assets/结构.jpg" style="zoom: 50%;" />
+   <img src="clickhouse.assets/结构.jpg" alt="结构" style="zoom:50%;" />
 
 ### 二级索引种类和作用
 
