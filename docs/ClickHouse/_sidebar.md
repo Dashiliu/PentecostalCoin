@@ -1,5 +1,5 @@
-- 原理与机制
-  - [文件结构和MergeTree原理](ClickHouse/clickhouse.md)
+- [原理与机制](ClickHouse/clickhouse.md)
+
 
 - 常用操作
 
