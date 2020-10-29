@@ -68,7 +68,7 @@ ClickHouse 是由号称“俄罗斯 Google ”的 Yandex开源的一个列式的
 
    最终结构
 
-   <img src="clickhouse.assets/结构.jpg" alt="结构" style="zoom:50%;" />
+   ![](clickhouse.assets/结构.jpg)
 
 ### 二级索引种类和作用
 
