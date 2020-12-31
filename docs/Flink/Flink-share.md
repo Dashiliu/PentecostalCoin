@@ -4,7 +4,7 @@
 
 ### 1.Flink目前的应用场景
 
-![](Flink-share.assets/Flink-apps.png)
+![](Flink-share.assets/flink-apps.png)
 
 
 
