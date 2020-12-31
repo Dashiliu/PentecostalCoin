@@ -22,7 +22,7 @@
 
 ### 3.Flink SQL的之前的调研情况，问题和下一步计划
 
-<img src="Flink-share.assets/Flink Sql调研进度和下一步计划.png" style="zoom:150%;" />
+<img src="Flink-share.assets/Flink Sql-next.png" style="zoom:150%;" />
 
 ### 4.Flink 进一步应用的畅想
 
