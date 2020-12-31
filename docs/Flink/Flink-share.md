@@ -4,7 +4,7 @@
 
 ### 1.Flink目前的应用场景
 
-<img src="Flink-share.assets/flink-apps.png" style="zoom:150%;" />
+<img src="Flink-share.assets/flink-apps.png"  />
 
 ### 2.以快应用为例,实时指标的方案演进,olap目前的情况和问题
 
@@ -22,7 +22,7 @@
 
 ### 3.Flink SQL的之前的调研情况，问题和下一步计划
 
-<img src="Flink-share.assets/Flink Sql-next.png" style="zoom:150%;" />
+<img src="Flink-share.assets/Flink Sql-next.png"  />
 
 ### 4.Flink 进一步应用的畅想
 
@@ -34,13 +34,13 @@
 
 ### 1.烟囱式开发
 
-<img src="Flink-share.assets/yancong.png" style="zoom:150%;" />
+<img src="Flink-share.assets/yancong.png"  />
 
 ### 2.实时数仓
 
 数仓的本质是预计算,实时指标通过分层预计算的实现方案就是实时数仓
 
-<img src="Flink-share.assets/lamda.png" style="zoom:150%;" />
+<img src="Flink-share.assets/lamda.png"  />
 
 实时数仓本身的问题 :
 
@@ -57,7 +57,7 @@
 
 ### 3.流批一体
 
-<img src="Flink-share.assets/liupiyti.png" style="zoom:150%;" />
+<img src="Flink-share.assets/liupiyti.png"  />
 
 本方案看似完美,实则该掉蛋还是会掉蛋
 
@@ -70,10 +70,10 @@
 
 ### 4.湖仓一体
 
-<img src="Flink-share.assets/hucangyiti.png" style="zoom: 80%;" />
+<img src="Flink-share.assets/hucangyiti.png"  />
 
 **阿里数据湖调研**
 
-<img src="Flink-share.assets/ali.jpg" style="zoom:150%;" />
+<img src="Flink-share.assets/ali.jpg"  />
 
 [网易: Flink + Iceberg 数据湖探索与实践 范欣欣](https://mparticle.uc.cn/article.html?uc_param_str=frdnsnpfvecpntnwprdssskt&btifl=100&app=uc-iflow&title_type=1&wm_id=bc640814aeaa49a2a2dad4089ac6dbfc&wm_cid=385473935352796160&pagetype=share&client=&uc_share_depth=1)
