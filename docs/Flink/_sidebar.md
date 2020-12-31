@@ -10,3 +10,5 @@
 - 常用操作
 
   - [失败重启配置](Flink/restart.md)
+
+- [应用情况和实时指标架构演进](Flink/Flink-share.md)
