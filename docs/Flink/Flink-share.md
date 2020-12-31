@@ -4,11 +4,11 @@
 
 ### 1.Flink目前的应用场景
 
-<img src="Flink-share.assets/flink-应用情况.png" style="zoom:150%;" />
+<img src="Flink-share.assets/flink-apps.png" style="zoom:150%;" />
 
 ### 2.以快应用为例,实时指标的方案演进,olap目前的情况和问题
 
-![](Flink-share.assets/实时指标各版本.png)
+![](Flink-share.assets/our-version.png)
 
 实时指标演进 : 第一版 单一的实时指标需求(计算后查询) -> 第二版 支持OLAP(查询时计算) -> 第三版 全SQL编程
 
