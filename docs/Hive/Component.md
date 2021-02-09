@@ -11,7 +11,7 @@ Hive是构建在Hadoop大数据平台之上，Hive数据存储依赖于HDFS, Hiv
 
 ## Hive架构
 
-Hive依托于Hadoop大数据平台，其架构随着Hadoop版本的迭代和自身的发展也在不断地演变，但在Hadoop步入2.x版本、Hive步入1.x版本后，整体架构稳定，后续的迭代版本就没有太多重大的调整，更多的只是功能增强了。例如，Hive 2.x引入的LLAP, Hive 3.x 在2.x的基础上加大了对LLAP和Tez的支持。
+Hive依托于Hadoop大数据平台，其架构随着Hadoop版本的迭代和自身的发展也在不断地演变，但在Hadoop步入2.x版本、Hive步入1.x版本后，整体架构稳定，后续的迭代版本就没有太多重大的调整，更多的只是功能增强了。例如，Hive 2.x引入的LLAP(守护进程代替直接与hdfs datanode通信,短查询直接在守护进程执行), Hive 3.x 在2.x的基础上加大了对LLAP和Tez的支持。
 
 下面我们就来看Hive 1.x的基本结构。
 
@@ -43,9 +43,11 @@ Hive 1.x版本基本结构在Hadoop 2.x版本以后，Hive所有运行的任务�
 
 3. 元数据及元数据服务。Hive的元数据记录了Hive库内对象的信息，包括表的结构信息、分区结构信息、字段信息及相关的统计信息等。
 
-4. 计算引擎 : 基于 Yarn 的 Hadoop MR 任务 / Spark / Flink
+4. 计算引擎 : 基于 **Yarn** 的 **Hadoop MR** 任务 / Spark / Flink
 
-5. 分布式文件系统 : HDFS
+5. 分布式文件系统 : **HDFS**
+
+6. Hive Sql 解析器 : Hive自身实现解析sql语法树, 优化是通过**Apache Calcite**实现
 
 ## Hive元数据
 
