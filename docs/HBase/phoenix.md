@@ -435,7 +435,7 @@ CREATE INDEX idx_test_salt_departmentid ON TESTN(departmentid) SALT_BUCKETS=20;
 
   加盐原理图解
 
-![img](Untitled.assets/61a956c0470a1ec720736515aec5df50643.jpg)
+![img](phoenix.assets/61a956c0470a1ec720736515aec5df50643.jpg)
 
 
 
