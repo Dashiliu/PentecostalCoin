@@ -25,6 +25,10 @@ Hive支持TEXTFILE, SEQUENCEFILE, AVRO, RCFILE, ORC,以及PARQUET文件格式，
 
 压缩格式的简单区别
 
+![hive orc](Optimize.assets/20160401-11.jpg)
+
+上图中原始的TEXT文本文件为585GB，使用Hive早期的RCFILE压缩后为505GB，使用Impala中的PARQUET压缩后为221GB，而Hive中的ORC压缩后仅为131GB，压缩比最高。
+
 org.apache.hadoop.io.compress.DefaultCodec
 org.apache.hadoop.io.compress.GzipCodec
 org.apache.hadoop.io.compress.BZip2Codec
@@ -35,6 +39,29 @@ org.apache.hadoop.io.compress.SnappyCodec
 
 
 
+
+
+
+```
+set hive.exec.dynamic.partition.mode=nonstrict;
+set mapred.job.map.capacity=2000;
+set hive.exec.parallel=true; # 并行执行
+set hive.exec.parallel.thread.number=16;
+set mapred.max.split.size=256000000;
+set mapred.min.split.size.per.node=100000000;
+set mapred.min.split.size.per.rack=100000000;
+set hive.input.format=org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
+set hive.merge.size.per.task=128000000;
+set hive.merge.smallfiles.avgsize=128000000;
+```
+
+
+
+https://mp.weixin.qq.com/s/-xIKcMhyMw2hluzF4EQLGg
+
+hive.exec.mode.local.auto=false # 本地模式 : 消除了提交到集群的overhead，所以比较适合数据量很小，且逻辑不复杂的任务,mapper数必须小于hive.exec.mode.local.auto.tasks.max（默认值4），reducer数必须为0或1，才会真正用本地模式执行
+hive.exec.mode.local.auto.input.files.max=4
+hive.exec.mode.local.auto.inputbytes.max=134217728
 
 ---
 
@@ -73,5 +100,9 @@ hive.fetch.task.conversion.threshold=268435456
 
 ---
 
+几种join 几种sortby 用法
 
+数据模型?
+
+ch的总结 <- 大大加分项 sql部分加强
 
