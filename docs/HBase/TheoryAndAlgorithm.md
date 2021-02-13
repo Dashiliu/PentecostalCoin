@@ -22,13 +22,13 @@
 
 ## 内存层如何设计?
 
-![img](theoryAndAlgorithm.assets/hbase io流.png)
+![img](theoryAndAlgorithm.assets/3.png)
 
 优化速度 的 第二个核心 : 
 
 **有序**
 
-得出结论 : 内存层需要各种牛逼的数据结果和算法来支持插入,查询时间复杂度好
+得出结论 : 内存层需要各种牛逼的数据结构和算法来支持插入,查询时间复杂度好
 
 ------
 
@@ -50,9 +50,9 @@ HBase rowkey组成 总体来说，字节数组主要分为以下几个字段。�
 
 - keyLen：占用4字节，用来存储KeyValue结构中Key所占用的字节长度。 
 
-- valueLen：占用4字节，用来存储KeyValue结构中Value所占用的字节长度。 
+- valueLen：占用4字节，用来存储KeyValue结构中Value所占用的字节长度->value 4G。 
 
-- rowkeyLen：占用2字节，用来存储rowkey占用的字节长度。 
+- rowkeyLen：占用2字节，用来存储rowkey占用的字节长度 -> 64kb。 
 
 - rowkeyBytes：占用rowkeyLen个字节，用来存储rowkey的二进制内容。 
 
@@ -94,7 +94,7 @@ int compare(KeyValue a, KeyValue b){
 ## **rowkey的设计**
 
 - 把重要的信息放左边 ,注意排序是字典序
-- rowKey是一个二进制 ,以byte[]形式保存 ,最大不能超过64kb .建议越短越好 ,64 位系统 ,内存 8 字节对齐
+- rowKey是一个二进制 ,以byte[]形式保存 ,最大不能超过64kb(rowkey length位为2B) .建议越短越好 ,64 位系统 ,内存 8 字节对齐
 - 示例 : 
 
 ```
