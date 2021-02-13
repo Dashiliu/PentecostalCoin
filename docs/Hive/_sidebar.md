@@ -6,7 +6,7 @@
 
 - [数据模型](Hive/DataModel.md)
 
-- 常用操作
+- [常用操作](Hive/Options.md)
 
 
 - 其他上层组件
