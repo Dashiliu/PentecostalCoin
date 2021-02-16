@@ -7,4 +7,5 @@
 - algorithm & leecode
 
   - [algorithm](algorithm/README.md)
+  - [bigdata](algorithm/bigdata/README.md)
   - [leecode](algorithm/leecode/README.md)
