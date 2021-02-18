@@ -466,4 +466,17 @@ void reverse(int[] nums) {
 
 13.滑动窗口
 
-[https://github.com/labuladong/fucking-algorithm/blob/master/%E7%AE%97%E6%B3%95%E6%80%9D%E7%BB%B4%E7%B3%BB%E5%88%97/%E6%BB%91%E5%8A%A8%E7%AA%97%E5%8F%A3%E6%8A%80%E5%B7%A7.md](https://github.com/labuladong/fucking-algorithm/blob/master/算法思维系列/滑动窗口技巧.md)
+```
+int left = 0, right = 0;
+while (right < s.size()) {`
+	// 增⼤窗⼝
+	window.add(s[right]);
+	right++;//窗口右边界右移
+	while (window 判断是否需要收缩) {
+		// 缩⼩窗⼝
+		window.remove(s[left]);
+		left++;//窗口左边界右移
+	}
+}
+```
+
