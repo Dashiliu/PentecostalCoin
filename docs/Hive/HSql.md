@@ -225,6 +225,29 @@ t_hosp;
 
 ![图片](HSql.assets/640-1612769780609.webp)
 
+
+
+最近一月连续7天登陆
+
+```
+table (user_id,log_date)
+select c.user_id,count(c.diff_log_date) as ct
+(select b.user_id,datediff(log_date,pre_log_date) as diff_log_date
+(select a.user_id,
+a.log_date,
+lag(log_date,1,log_date) over(partition by user_id order by log_date asc) as pre_log_date from 
+(select log_date ,user_id from table group by log_date ,user_id) a
+)b
+)c
+where c.diff_log_date=1 
+group by c.user_id,c.diff_log_date
+having ct>=7;
+```
+
+
+
+
+
 ## 2.行/列转换 & 集合/表生成函数
 
 1.students_info(学生信息行转列表)
