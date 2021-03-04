@@ -136,7 +136,6 @@ user_name
 ,month_id
 ,sale_amt
 ,sum(sale_amt) over(partition by user_name order by month_id) as all_sale_amt1 --默认为从起点行到当前行
-
 ,sum(sale_amt) over(partition by user_name order by month_id rows between unbounded preceding and current row) as all_sale_amt2 --从起点行到当前行
 
 ,sum(sale_amt) over(partition by user_name order by month_id rows between 3 preceding and current row) as all_sale_amt3 --当前行及往前3行之和
@@ -230,18 +229,28 @@ t_hosp;
 最近一月连续7天登陆
 
 ```
-table (user_id,log_date)
-select c.user_id,count(c.diff_log_date) as ct
-(select b.user_id,datediff(log_date,pre_log_date) as diff_log_date
-(select a.user_id,
-a.log_date,
-lag(log_date,1,log_date) over(partition by user_id order by log_date asc) as pre_log_date from 
-(select log_date ,user_id from table group by log_date ,user_id) a
-)b
-)c
-where c.diff_log_date=1 
-group by c.user_id,c.diff_log_date
-having ct>=7;
+table (id,date)
+
+select id,count(*) 
+from 
+(select *,date_add(dated,-rown) as startdate 
+    from
+         (select *,row_number() over(PARTITION by id order by dated) as rown
+             from 
+                (select distinct id, to_date(date) as dated 
+                      from table ) a
+          ) b
+)c 
+GROUP BY id,startdate
+ having count(*)>=7;
+ 
+查询7天连续登陆用户这个问题很经典，解决方法也有很多，这里我讲一下笔者的方法，希望对大家有帮助。
+
+具体思路:
+1、因为每天用户登录次数可能不止一次，所以需要先将用户每天的登录日期去重。
+2、再用row_number() over(partition by _ order by _)函数将用户id分组，按照登陆时间进行排序。
+3、计算登录日期减去第二步骤得到的结果值，用户连续登陆情况下，每次相减的结果都相同。
+4、按照id和日期分组并求和，筛选大于等于7的即为连续7天登陆的用户。
 ```
 
 
